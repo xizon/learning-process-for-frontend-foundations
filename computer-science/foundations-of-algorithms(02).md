@@ -8,15 +8,20 @@
  - [判断素数质数](#判断素数质数)
  - [有效的括号](#有效的括号)
  - [验证二叉搜索树](#验证二叉搜索树)
+ - [字符串字符计数](#字符串字符计数)
+ - [插入五](#插入五)
+
 
 ### 返回最大和最小的数字
 ----
+
+输入一串空格分隔的数字，返回最高和最低的数字。
 
 #### 测试
 ```js
 const chai = require("chai");
 const assert = chai.assert;
-chai.config.truncateThreshold=0;
+chai.config.truncateThreshold=0; // 禁用截断"断言错误中实际值和预期值的长度阈值"
 
 describe("Basic tests", () => {
   it("Testing for fixed tests", () => {
@@ -168,6 +173,8 @@ console.log( highAndLow( '2 1 8 -1 5' ) ); // 8 -1
 
 ### 分割字符串
 ----
+
+将字符串拆分为两个字符对。 如果字符串包含奇数个字符，那么它应该用下划线 ('_') 替换最后一对中缺少的第二个字符。
 
 #### 测试
 ```js
@@ -474,6 +481,9 @@ function solution(str) {
 ### 驼峰命名转换
 ----
 
+将破折号/下划线分隔的单词转换为驼峰式大小写。 仅当原始单词大写时，输出中的第一个单词才应大写（称为 Upper Camel Case，通常也称为 Pascal 大小写）。
+
+
 #### 测试
 ```js
 describe("Tests", () => {
@@ -651,6 +661,8 @@ function toCamelCase(str){
 ### 判断素数质数
 ----
 
+Z+中的一个数P>1, 若满足整除P的正整数只有P和1，则称为素数。如2，3，5，7，11，13...
+
 #### 测试
 ```js
 describe("Basic", ()=>{
@@ -827,6 +839,8 @@ const isPrime = n => {
 ### 有效的括号
 ----
 
+编写一个函数，该函数接受一串括号，并确定括号的顺序是否有效。
+
 #### 测试
 ```js
 const { assert } = require('chai');
@@ -872,7 +886,7 @@ console.log( validParentheses( "([)]" ));//false
 console.log( validParentheses( "{[]}" ));//true
 ```
 
-### 使用for循环：
+#### 使用for循环：
 ```js
 function validParentheses(parens){
   var n = 0;
@@ -1150,20 +1164,39 @@ console.log( isBST(tree2) );  // false
 //扁平化树
 function flattenTree(node) {
     if (node) {
+        //中序遍历(节点本身在中间，左右节点在两边)
         return [...flattenTree(node.left), node.value, ...flattenTree(node.right)];
     } else {
         return [];
     }
 }
 
+/*
+
+[5, 2, 7, 1, 3, null, 9]
+
+           5
+         /   \
+        2     7
+       /  \  /  \
+      1   3  n   9
+     / \ / \     / \
+    n  n n  n    n  n
+     
+将被扁平为 
+
+[1, 2, 3, 5, 7, 9]
+
+
+*/
+
+
 function isBST(root) {
     const values = flattenTree(root);
 
     //every() 都满足条件才返回true，false可跳出循环
     //可以简写成 return values.ever... || values.ever...;
-    if (values.every((value, index, arr) => index === 0 || value < arr[index - 1]) === true ||
-        values.every((value, index, arr) => index === 0 || value > arr[index - 1]) === true
-    ) {
+    if (values.every((value, index, arr) => index === 0 || value > arr[index - 1]) === true) {
         return true;
     } else {
         return false;
@@ -1178,6 +1211,8 @@ function isBST(root) {
 ```js
 //扁平化树(使用concat)
 function flattenTree(node) {
+
+    //中序遍历
     return (node.left === null ? [] : 
             flattenTree(node.left))
             .concat(node.value)
@@ -1190,7 +1225,229 @@ function isEqual(a, b) {
 function isBST(root) {
     const values = flattenTree(root);
     const sorted = values.slice().sort((a,b) => b-a);
-    return isEqual(values, sorted) || isEqual(values, sorted.reverse())
+    return isEqual(values, sorted.reverse());
 }
 
 ```
+
+
+
+
+### 字符串字符计数
+----
+
+计算字符串中所有出现的字符。 如果你有一个像 aba 这样的字符串，那么结果应该是 {'a': 2, 'b': 1}。
+如果字符串为空，那么结果应该是空的对象字面量，{}。
+
+#### 测试
+```js
+const chai = require("chai");
+const assert = chai.assert;
+chai.config.truncateThreshold=0; // 禁用截断"断言错误中实际值和预期值的长度阈值"
+
+
+describe("Tests", () => {
+  it("should pass sample tests", () => {
+    assert.deepEqual(count("aba"), { a: 2, b: 1 }); 
+    assert.deepEqual(count(""), {});    
+  });
+});
+
+
+```
+
+
+#### 基础解法：
+
+使用Arrayfrom()和hasOwnProperty()
+
+```js
+function count(string) {
+    const res = {};
+    const strArr = Array.from(string);
+    let count = 1;
+    strArr.forEach(function (item, indx) {
+        if (res.hasOwnProperty(item)) {
+            count++;
+        } else {
+            count = 1;
+        }
+        res[item] = count;
+
+    });
+
+    return res;
+}
+```
+
+
+#### 直接判断JSON键值是否存在累加
+
+
+```js
+function count (string) {  
+  var count = {};
+  string.split('').forEach(function(s) {
+     count[s] ? count[s]++ : count[s] = 1;
+  });
+  return count;
+}
+```
+
+
+
+#### 使用reduce()
+
+```js
+function count (string) {
+  return string.split('').reduce(function(counts,char){
+    counts[char] = (counts[char]||0) + 1;
+    return counts;
+  },{});
+}
+
+```
+
+
+```js
+function count (string) {  
+  if (!string) return {};
+  return string.toLowerCase().replace(/[^a-z]/gi, '').split('').reduce( (ac, item) => {
+     ac[item] =  ac[item]? ac[item] + 1: 1;
+     return ac;
+  }, {});
+}
+```
+
+
+使用in关键字判断JSON键值存在
+
+```js
+function count (string) {  
+  return string.split("").reduce(function(obj, elem) {
+    if (elem in obj)
+      obj[elem]++;
+    else
+      obj[elem] = 1;
+    return obj;
+  }, {});
+}
+
+```
+
+
+
+#### 使用正则统计字符数
+
+```js
+function count (string) {  
+  var string1 = string.split("")
+  var obj = {}
+  for (var i =0; i < string.length; i++) {
+  var checkForDigit = new RegExp (`${string1[i]}` , 'g')
+    var matchedAmount = string.match(checkForDigit).length
+    var count = matchedAmount
+    obj[`${string1[i]}`] = count
+  }
+  // The function code should be here
+   return obj;
+}
+
+```
+
+
+
+#### 使用for...of
+
+```js
+function count (string) {  
+  // The function code should be here
+  let obj = {}
+  for(item of string){
+    if(!obj[item]){
+      obj[item] = 0;
+    }
+    obj[item]++;
+  }
+    
+  return(obj)
+//    return {};
+}
+```
+
+
+
+
+### 插入五
+----
+
+给定一个数字，在数字的任意位置插入一个5，使得插入后的这个数字最大。
+
+#### 测试
+```js
+const chai = require("chai");
+const assert = chai.assert;
+chai.config.truncateThreshold=0; // 禁用截断"断言错误中实际值和预期值的长度阈值"
+
+describe("Basic tests", () => {
+  it("Testing for fixed tests", () => {
+    assert.strictEqual(insertFive(234), 5234);
+    assert.strictEqual(insertFive(73), 753);
+    assert.strictEqual(insertFive(-12), -125);  // 插入末尾
+    assert.strictEqual(insertFive(-78), -578);
+  });
+});
+
+```
+
+
+#### 解法：
+```js
+function insertFive(a) {
+	// 先把a的绝对值求出来，然后转为字符串
+	const b = Math.abs(a);
+	let strArr = b.toString().split('');
+
+	// 取出a的位数
+	const len = strArr.length;
+
+	
+	if (a >= 0) {
+		console.log('正数');
+		for (let i = 0; i < len; i++) {
+			if (strArr[i] <= '5') {
+				// 在位置i，删除0个元素，添加1个元素"5"：
+				strArr.splice(i, 0, '5');
+				break;
+			}
+		}
+
+		
+	} else {
+		console.log('负数');
+		for (let i = 0; i < len; i++) {
+			if (strArr[i] >= '5') {
+				// 在位置i，删除0个元素，添加1个元素"5"：
+				strArr.splice(i, 0, '5');
+				break;
+			}
+		}
+	}
+
+
+
+	// 这里如果发现strArr的长度没有变化，说明5没有被插入进去，则添加到末尾
+	if (strArr.length == len) {
+		console.log('插入末尾');
+		strArr.splice(len, 0, '5');
+	}
+
+	//console.log('strArr.join(""): ', strArr.join(''));
+
+	const res = parseInt( strArr.join('') );
+	return a >= 0 ? res : -res;
+}
+```
+
+注：算法中的所有 '5' 均可改为纯数字类型 5 (不加引号)
+
