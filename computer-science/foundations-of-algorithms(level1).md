@@ -1,4 +1,4 @@
-# 常见算法基础(01) 
+# 常见算法基础(Level 1) 
 
 ## 目录
 
@@ -12,6 +12,13 @@
  - [缓动算法-趋近10](#缓动算法-趋近10)
  - [缓动算法-趋近0](#缓动算法-趋近0)
  - [计算坐标的弧度角度](#计算坐标的弧度角度)
+ - [斐波那契数列](#斐波那契数列)
+ - [翻转(反转)单链表](#翻转反转单链表)
+ - [设计LRU](#设计lru)
+ - [两个栈实现队列](#两个栈实现队列)
+ - [二叉树层序遍历](#二叉树层序遍历)
+ - [无重复最长子串](#无重复最长子串)
+
  
 
 ### 递归函数逻辑
@@ -1070,3 +1077,773 @@ const degrees = getDegree(radians);
 console.log( 'radians', radians );  // 0.7853981633974483
 console.log( 'degrees', degrees );  // 45
 ```
+
+
+
+
+
+
+### 斐波那契数列
+----
+给定一个数 N 返回斐波那契数列的索引值。
+
+
+#### 概念
+
+斐波那契数列（Fibonacci sequence），又称黄金分割数列，因数学家莱昂纳多·斐波那契（Leonardo Fibonacci）以兔子繁殖为例子而引入，故又称为“兔子数列”，指的是这样一个数列：1、1、2、3、5、8、13、21、34、……
+
+在现代物理、准晶体结构、化学等领域，斐波纳契数列都有直接的应用。
+
+递推公式：F(n) = F(n-1) + F(n-2)
+
+
+#### 解法
+```js
+//迭代
+//----------
+function fibonacci(num) {
+    let a = 1, b = 0, temp;
+    
+    while (num >= 0) {
+
+        console.log(temp); // undefined, 1, 1, 2, 3, 5
+
+        temp = a;
+        a = a + b;
+        b = temp;
+        num--;
+        
+    }
+
+
+    return b;
+}
+
+console.log( fibonacci(5) ); // 8
+
+
+//递归
+//----------
+function fibonacci(num) {
+  if (num <= 1) return 1;
+
+  return fibonacci(num - 1) + fibonacci(num - 2);
+}
+
+console.log( fibonacci(5) ); // 8
+```
+
+
+
+
+
+
+
+
+
+
+### 翻转(反转)单链表
+----
+
+反转单链表。(链表的开头称为头，链表末尾的节点称为尾)
+
+例子:
+
+ - Input: 1->2->3->4->5->NULL
+ - Output: 5->4->3->2->1->NULL
+
+
+#### 数据结构
+```base
+ Head(头)
+ ↓
+[A:next]  ->   [B:next]  ->   [C:next]  ->   NULL
+ ↑  ↑
+ 值 指针
+```
+
+#### 解法
+```js
+
+// 单向链表(Single Linked List)
+class LinkedListNode {
+    constructor(value) {
+        this.value = value;
+        this.next = null;
+    }
+}
+/*
+也可以写成
+
+function LinkedListNode(value) {
+    this.value = value;
+    this.next = null;
+}
+*/
+
+
+//迭代法 => 时间复杂度O(n)  空间复杂度 O(1)
+function reverseLinkedList(head) {
+    let node = head,
+        previous = null,  // 前一个节点指针,默认设置一个null值，否则反转后最后的结果会缺少next的null值
+        tmp;
+
+    while (node) {
+        // 我们遍历列表一次，将每个节点的下一个指针更改为前一个节点
+        // 将 node.next 复制到 tmp 中，然后再将 node.next 设置为上一个
+        tmp = node.next;
+
+        // 反向指针
+        node.next = previous;
+
+        // 在列表中前进
+        previous = node;
+        node = tmp;
+    }
+
+    return previous;
+}
+
+
+
+//递归 => 时间复杂度O(n)  空间复杂度 O(n)
+function reverseLinkedList2(head) {
+    if (!head || !head.next) {
+        return head;
+    }
+    let tmp = reverseLinkedList2(head.next);
+    head.next.next = head;
+    head.next = null;
+    return tmp;
+}
+
+
+const linkedList = new LinkedListNode(1);
+linkedList.next = new LinkedListNode(2);
+linkedList.next.next = new LinkedListNode(3);
+linkedList.next.next.next = new LinkedListNode(4);
+console.log( JSON.stringify(linkedList) );
+/*输出：
+{
+  data: 1,
+  next: {
+    data: 2,
+    next: {
+      data: 3,
+      next: {
+        data: 4,
+        next: null
+      }
+    }
+  }
+}
+*/
+
+console.log( JSON.stringify(reverseLinkedList(linkedList)) );
+/*输出：
+{
+  data: 4,
+  next: {
+    data: 3,
+    next: {
+      data: 2,
+      next: {
+        data: 1,
+        next: null
+      }
+    }
+  }
+}
+*/
+```
+
+
+
+
+### 设计LRU
+----
+
+设计一个遵循最近最少使用 (LRU) 缓存约束的数据结构。
+
+LRU是Least Recently Used的缩写，即最近最少使用，是一种常用的页面置换算法，选择最近最久未使用的页面予以淘汰。
+
+
+#### 数据结构
+```base
+哈希表(Hash Table)
+
+ Key  | Value
+--------------
+  1   |  A
+  2   |  B
+  3   |  C
+  4   |  
+  5   |   
+  6   |   
+  7   |   
+  8   |   
+  9   |   
+
+
+双向链表(Double Linked List)
+
+ null A  B              A  B  C             B  C null
+   ↓  ↓  ↓              ↓  ↓  ↓              ↓  ↓  ↓
+[prev:1:next]  <->   [prev:2:next]  <->   [prev:3:next]
+
+```
+
+
+#### 解法
+
+```js
+//初始化LRU
+function LRUCache(capacity) {
+    this.capacity = capacity;
+    this.map = new Map(); // this stores the entire array
+
+    // this is boundaries for double linked list
+    this.head = {};
+    this.tail = {};
+
+    this.head.next = this.tail; // initialize your double linked list
+    this.tail.prev = this.head;
+}
+
+// 该操作将返回键的值，如果存在，则返回-1。
+LRUCache.prototype.get = function (key) {
+    if (this.map.has(key)) {
+
+        // 从当前位置删除元素
+        let c = this.map.get(key);
+        c.prev.next = c.next;
+        c.next.prev = c.prev;
+
+        this.tail.prev.next = c; // 在最后一个元素之后插入它 (尾部前的元素)
+        c.prev = this.tail.prev; // 更新 c.prev 和 next 指针
+        c.next = this.tail;
+        this.tail.prev = c; // 将最后一个元素更新为尾部
+
+        return c.value;
+    } else {
+        return -1;
+    }
+};
+
+
+// 该操作将更新键值
+// 如果找到，将键和值对添加到缓存中。 如果键的数量超过了缓存的初始化容量，则驱逐最近最少访问的项目。
+LRUCache.prototype.put = function (key, value) {
+    if (this.get(key) !== -1) {
+        // 如果键不存在，则更新最后一个元素值
+        this.tail.prev.value = value;
+    } else {
+        // 检查map大小是否达到容量
+        if (this.map.size === this.capacity) {
+
+            //删除项目
+            //---------
+            this.map.delete(this.head.next.key); // 删除列表的第一个元素
+            this.head.next = this.head.next.next; // 将第一个元素更新为下一个元素
+            this.head.next.prev = this.head;
+        }
+
+        // 哈希表
+        let newNode = {
+            value,
+            key,
+        };
+
+        // 添加节点
+        //---------
+        this.map.set(key, newNode); //将当前节点添加到地图
+        this.tail.prev.next = newNode; // 将节点添加到列表末尾
+        newNode.prev = this.tail.prev; // 更新 newNode 的 prev 和 next 指针
+        newNode.next = this.tail;
+        this.tail.prev = newNode; // 更新最后一个元素
+    }
+};
+
+
+
+
+const lRUCache = new LRUCache(2); // 缓存容量为2
+lRUCache.put("red", "red"); //缓存 {red=red}
+lRUCache.put("grey", "grey"); //缓存 {red=red, grey=grey}
+//----
+
+const param_1 = lRUCache.get("red");
+console.log(param_1); // red (从缓存中获取)
+//----
+
+lRUCache.put("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {red=red, yellow=yellow}
+//----
+
+const param_2 = lRUCache.get("grey");
+console.log(param_2); // -1
+//----
+
+```
+
+
+
+
+
+### 两个栈实现队列
+----
+
+我们已经有一个带有 push 和 pop 操作的栈数据结构，任务是使用栈数据结构的实例和对它们的操作来实现一个队列。 一个队列可以使用两个栈来实现。 
+
+设要实现的队列为 q，用于实现 q 的堆栈为 stack1 和 stack2。 (操作这两个“先进后出”的栈实现一个“先进先出”的队列。)
+
+
+#### 数据结构
+
+```base
+栈(Stack)   
+
+插入和删除都发生在尾部
+
+                                  push
+                                  ↓
+ [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+                                ↓
+                                top
+ 
+ 
+ 
+ 
+
+队列(Queue)
+
+   入队enqueue                          出队dequeue
+     ↓                                  ↓
+      [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+       ↓                             ↓
+     rear                           front
+
+
+```
+
+ 
+ 
+#### 解法
+```js
+class Queue {
+    constructor() {
+        this.s1 = [];
+        this.s2 = [];
+    }
+
+    enQueue(x) {
+        // 将所有元素从 s1 移动到 s2
+        while (this.s1.length != 0) {
+            this.s2.push(this.s1.pop());
+            //s1.pop(); 
+        }
+
+        // 将元素推入 s1
+        this.s1.push(x);
+
+        // 将所有内容推回 s1
+        while (this.s2.length != 0) {
+            this.s1.push(this.s2.pop());
+            //s2.pop(); 
+        }
+    }
+
+ 
+    deQueue() {
+        // 如果第一个栈为空
+        if (this.s1.length == 0) {
+            document.write("Q is Empty");
+        }
+
+        // 返回 s1 的顶部
+        let x = this.s1[this.s1.length - 1];
+        this.s1.pop();
+        return x;
+    }
+}
+
+
+let q = new Queue();
+q.enQueue(1);
+q.enQueue(2);
+q.enQueue(3);
+
+console.log( JSON.stringify(q));  // {"s1":[3,2,1],"s2":[]}
+//-----
+
+q.deQueue();
+console.log( JSON.stringify(q));  // {"s1":[3,2],"s2":[]}
+//-----
+
+q.deQueue();
+console.log( JSON.stringify(q));  // {"s1":[3],"s2":[]}
+//-----
+```
+
+
+
+
+
+### 二叉树层序遍历
+----
+
+已知二叉树的根节点 root ，返回其节点值的层序遍历 。 （即逐层地，从左到右访问所有节点, 广度优先遍历）。
+
+
+```base
+例：
+
+     3
+    / \
+   9   20
+       / \
+     15   7
+     
+     
+输入：root = [3,9,20,null,null,15,7]
+输出：[[3],[9,20],[15,7]]
+ 
+```
+
+ 
+
+#### 数据结构
+
+```base
+队列(Queue)
+
+   入队enqueue                          出队dequeue
+     ↓                                  ↓
+      [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
+       ↓                             ↓
+     rear                           front
+
+```
+
+#### 过程(使用队列)
+
+```base
+把数据按照队列的数据结构从左到右表示出来，即：
+
+
+         [最先插入的节点]                  
+              ↓                                
+ (出队) <--  [ 3 ][ 9 ][ 20 ][ NULL ][ NULL ][ 15 ][ 7 ] <-- (入队)
+            
+
+
+注意：每一层的元素(包括null)，其实都是 2 的倍数，可以结合考虑 % 2 余数的算法
+
+Level 1: [3] 
+Level 2: [9, 20] 
+Level 3: [null, null, 15, 7] 
+
+▲ 代表"删除的节点"
+
+
+
+第一步：
+
+                                 
+       <--  [ 3 ] <--
+              ▲         
+                        
+
+
+
+第二步：
+
+                    
+                                           
+        <--   [ 3 ][ 9 ][ 20 ][ NULL ][ NULL ] <--
+                ▲    ▲     
+                        
+                        
+ 第三步：
+
+                    
+                                           
+        <--   [ 3 ][ 9 ][ 20 ][ NULL ][ NULL ][ 15 ][ 7 ] <--
+                ▲    ▲    ▲                        
+
+
+```
+
+
+#### 解法
+```js
+class Node {
+    constructor(val) {
+        this.data = val;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+let root = null;
+root = new Node(3);
+root.left = new Node(9);
+root.right = new Node(20);
+root.right.left = new Node(15);
+root.right.right = new Node(7);
+
+
+// 第一种输出格式
+//------------------------
+// 计算树的"高度" (从根节点到最远叶节点的最长路径上的节点数)
+/*
+高度计算：
+
+         3 (h=3)
+        / \
+ (h=1) 9   20 (h=2)
+           / \
+    (h=1) 15  7 (h=1)
+
+*/
+function height(root) {
+    if (root == null) {
+        return 0;  // 如果返回 -1， 则高度将 -1，即总高度为 2
+    } else {
+        // 计算每个子树的高度
+        const lheight = height(root.left);
+        const rheight = height(root.right);
+
+        // 使用较大的
+        if (lheight > rheight) {
+            return (lheight + 1);
+        } else {
+            return (rheight + 1);
+        }
+        
+        /*
+        也可将上面的代码简写成一行：
+        return Math.max( height(root.left), height(root.right) ) + 1;
+        */
+            
+    }
+}
+
+// 遍历每一层
+function traversalCurrentLevel(root, level) {
+    if (root == null) {
+        return 'null';
+    }
+
+    if (level == 1) {
+        return root.data;
+    }
+
+    if (level > 1) {
+        return String(traversalCurrentLevel(root.left, level - 1)) + ',' +
+               String(traversalCurrentLevel(root.right, level - 1));
+    }
+}
+
+function levelOrder(root) {
+    const h = height(root);
+    let res = '';
+    for (let i = 1; i <= h; i++) {
+        res += '[';
+        res += traversalCurrentLevel(root, i) 
+        res += ']';
+
+        //末尾去掉逗号
+        if (i !== h) res += ',';
+    }
+
+    return JSON.parse(`[${res}]`);
+}
+
+
+console.log( levelOrder(root) );  // [[3], [9, 20], [null, null, 15, 7]]
+
+
+
+
+// 第二种输出格式 (使用队列分组)
+//------------------------
+// 队列原理：相当于根据当前 level 交替推送两个队列中的节点
+function levelOrder(root) {
+    let res = [], 
+        queue = [];
+    queue.push(root); // [Node]
+
+    if(root === null) return res;
+
+    while(queue.length !== 0) { // 相当于每次 level 的循环，直到 queue为空时停止循环
+
+        // 队列中的所有元素都是 null,则直接退出 while 循环
+        const queueAllElementsAreNull = queue.every( (item) => item === null );
+        if ( queueAllElementsAreNull ) break;
+
+
+        // 记录当前层级节点数
+        let currentLevelSize = queue.length;
+
+        //存放每一层的节点 
+        let curLevel = [];
+        for(let i = 0; i < currentLevelSize; i++) {
+            let tempNode = queue.shift();
+
+            if (tempNode) {
+                curLevel.push(tempNode.data);
+    
+                // 存放当前层下一层的节点
+                queue.push(tempNode.left);
+                queue.push(tempNode.right);
+
+            } else {
+                curLevel.push(null);
+            }
+
+
+            /*
+            如果不想把 null 添加到结果中，可以删除 queueAllElementsAreNull 条件，并把 if (tempNode) {...}else{...} 替换成下面的代码：
+            
+            curLevel.push(tempNode.data);
+
+            // 存放当前层下一层的节点
+            if (tempNode.left != null) queue.push(tempNode.left);
+            if (tempNode.right != null) queue.push(tempNode.right);
+            */
+            
+        }
+        //把每一层的结果放到结果数组
+        res.push(curLevel);
+    }
+    return res;
+}
+
+console.log( levelOrder(root) );  // [[3], [9, 20], [null, null, 15, 7]]
+
+```
+
+
+
+
+
+### 无重复最长子串
+----
+
+给定一个字符串，请你找出其中不含有重复字符的最长子串的长度。
+
+
+示例1:
+
+ - 输入: "abcabcbb"
+ - 输出: 3 
+ - 解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
+
+
+示例2:
+
+ - 输入: "bbbbb"
+ - 输出: 1
+ - 解释: 因为无重复字符的最长子串是 "b"，所以其长度为 1。
+ 
+
+#### 解法
+```js
+// 基本解法(时间复杂度 O(n^2) )
+//------------------------
+function longestUniqueSubstr(str) {
+    const n = str.length;
+    let res = 0;
+
+    for (let i = 0; i < n; i++) {
+
+        // 注意：visited 中的默认值为 false
+        const visited = new Array(256);
+
+        for (let j = i; j < n; j++) {
+
+            // 如果当前字符被访问，则跳出循环
+            // charAt() 是按位置返回字符；charCodeAt() 是按位置返回对应字符的Unicode编码
+            if (visited[str.charCodeAt(j)] == true) {
+                break;
+            } else {
+                res = Math.max(res, j - i + 1);
+                visited[str.charCodeAt(j)] = true;
+            }
+        }
+    }
+    return res;
+}
+
+
+
+// 使用线性时间(时间复杂度 O(n + d))
+//------------------------
+function longestUniqueSubstr2(str) {
+    const n = str.length;
+    let res = 0;
+
+    // 所有字符的最后一个索引被初始化为 -1
+    const lastIndex = new Array(256).fill(-1); 
+ 
+    // 初始化当前数据的开始
+    let i = 0;
+
+    // 移动当前数据的结尾
+    for (let j = 0; j < n; j++) {
+
+        // 找到 str[j] 的最后一个索引
+        // 将 i（当前数据的起始索引）更新为 i 的当前值和最后一个索引 +1 的最大值
+        i = Math.max(i, lastIndex[str.charCodeAt(j)] + 1);
+
+        // 如果我们得到更大的数据，则更新结果
+        res = Math.max(res, j - i + 1);
+
+        // 更新 j 的最后一个索引
+        lastIndex[str.charCodeAt(j)] = j;
+    }
+    return res;
+}
+
+
+// 使用字典(时间复杂度 O(n + d))
+//------------------------
+function longestUniqueSubstr3(s) {
+    let seen = new Map();
+    let maximumLength = 0;
+
+    // 设置开始数据的初始点索引
+    let start = 0;
+
+    for (let end = 0; end < s.length; end++) {
+
+        if (seen.has(s[end])) {
+
+            // 如果我们查找到目标，将开始指针移动到最后一次出现之后的位置
+            start = Math.max(start, seen.get(s[end]) + 1);
+        }
+
+        // 更新最后一次查找到的值
+        seen.set(s[end], end)
+        maximumLength = Math.max(maximumLength, end - start + 1);
+    }
+    return maximumLength;
+}
+
+console.log( longestUniqueSubstr3( 'abcabcbb' ) ); // 3  =>  abc
+console.log( longestUniqueSubstr3( 'geeksforgeeks' ) ); // 7  => ksforge
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
