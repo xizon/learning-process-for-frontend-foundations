@@ -1392,6 +1392,8 @@ class LRU {
         let item = this.cache.get(key);
         if (item) {
             // 刷新键
+            // 相当于把用过的元素往后移
+            // 即使用cache.get("red")，则 {'red' => 'red', 'grey' => 'grey'} 变成 {'grey' => 'grey', 'red' => 'red'}
             this.cache.delete(key);
             this.cache.set(key, item);
         }
@@ -1402,25 +1404,52 @@ class LRU {
         // 刷新键
         if (this.cache.has(key)) this.cache.delete(key);
 
-        // 驱逐最旧的元素
+        // 驱逐最旧的元素  (最近，最少使用的grey将被删除)
         else if (this.cache.size == this.max) this.cache.delete(this.first());
         this.cache.set(key, val);
     }
 
     first() {
-        return this.cache.keys().next().value;
+        // 也可以写成 Array.from( this.cache.keys() )[0]
+        return this.cache.keys().next().value; // 内置遍历器
     }
 }
+
+
+
+// 注意缓存cache输出的顺序，和双链表的有区别
+
+const cache = new LRU(2); // 缓存容量为2
+cache.set("red", "red"); //缓存 {red=red}
+cache.set("grey", "grey"); //缓存 {red=red, grey=grey}
+//----
+
+const param_1 = cache.get("red");
+console.log(param_1); // red (从缓存中获取)
+//----
+
+cache.set("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {red=red, yellow=yellow}
+//----
+
+const param_2 = cache.get("grey");
+console.log(param_2); // undefined
+//----
+
+
 ```
 
 
-#### 解法2(使用双链表)：
+
+#### 解法2-1(使用双链表)
+
+【特别注意节点的交换时，左右"指针"的变化的"当前节点的值"的变化】
 
 在双向链表中，将 head 设为最近使用的并将 tail 设为最近最少使用的。
 
  - 在头部进行每次插入。
- - 在每次读取或更新操作时，将节点与其位置分离，并将其附加到 LinkedList 的头部。 请记住，LRU 是根据对缓存的读取和写入操作来表示的。
- - 当缓存限制超过时，从尾部删除一个节点
+ - 在每次读取或更新操作时，将节点与其位置分离，并将其附加到 LinkedList 的头部。 
+ - 当缓存限制超过时，从尾部删除一个节点 (因为每次使用的都往前移，所以结尾的元素是最少使用的)
+ - 时间复杂度 O(1)
 
 ```js
 class Node {
@@ -1501,18 +1530,147 @@ class LRU {
 ```
 
 
-#### 结果测试
+#### 解法2-2(使用双链表, 详细分解注释，便于理解)
+
 ```js
+class Node {
+    constructor(key, value, next = null, prev = null) {
+        this.key = key;
+        this.value = value;
+        this.next = next;
+        this.prev = prev;
+    }
+}
+
+class LRU {
+    constructor(limit = 10) {
+        this.size = 0;
+        this.limit = limit;
+        this.head = null;
+        this.tail = null;
+        this.cache = {};
+    }
+
+    set(key, value) {
+        let newNode;
+
+        if ( this.cache[key] === undefined )  newNode = new Node(key, value);
+
+
+        // 链表为空
+        //--------------
+        if (this.size === 0) {
+            this.head = newNode;
+            this.tail = newNode;
+            this.size++;
+            this.cache[key] = newNode;
+            return this;
+        }
+
+
+        // 链表容量超限
+        //--------------
+        if (this.size === this.limit) {
+            //删除节点
+            delete this.cache[this.tail.key]
+
+            //设置新的尾部节点为它的前一个节点
+            this.tail = this.tail.prev;
+            this.tail.next = null;
+            this.size--;
+        }
+
+
+        // 节点添加到头部（step1~5）
+        //--------------
+        // step1: 头部的前一个节点指针设置为当前节点
+        this.head.prev = newNode;
+
+        // step2: 当前节点的下一个节点指针设置成之前的头部节点
+        newNode.next = this.head;  
+
+        // step3: 头部节点替换成当前节点
+        this.head = newNode;
+
+        // step4: 当前节点的前一个节点指针设置为null
+        newNode.prev = null;
+
+        // step5: 计数+1
+        this.size++;
+
+        
+        //添加到缓存
+        //--------------
+        this.cache[key] = newNode;
+        return this;
+
+    }
+
+
+    get(key) {
+        if (!this.cache[key]) {
+            return undefined;
+        }
+
+        let foundNode = this.cache[key];
+        let foundNodePrev = foundNode.prev; // 当前节点的前一个节点
+        let foundNodeNext = foundNode.next;  // 当前节点的后一个节点
+
+        // 如果当前节点是头 (直接返回节点，因为不需要任何位置交换)
+        //--------------
+        if (foundNode === this.head) {
+            return foundNode.value;
+        }
+
+        // 如果当前节点是尾 (它后面没有元素，无需考虑foundNodeNext，所以它只和前一个节点交换位置)
+        //--------------
+        if (foundNode === this.tail) {
+            if (foundNodePrev) foundNodePrev.next = null;  // 前一个节点的下一个指针变成null
+            this.tail = foundNodePrev; // 尾部节点替换成前一个节点 (当前节点依然存在，然后下一步时当前节点将会移动到头部位置)
+        }
+
+        // 如果当前节点居于头尾之间 (要将当前节点的prev和next指针拆开，分配到当前节点的前后节点指针中, 然后下一步时当前节点将会移动到头部位置)
+        //--------------
+        if (foundNode !== this.head && foundNode !== this.tail) {
+            if (foundNodePrev) foundNodePrev.next = foundNodeNext;  // 前一个节点的下一个指针变成当前节点的后一个节点
+            if (foundNodeNext) foundNodeNext.prev = foundNodePrev;  // 后一个节点的上一个指针变成当前节点的前一个节点
+        }
+
+        
+        // 节点添加到头部（step1~4）
+        //--------------
+        // step1: 头部的前一个节点指针设置为当前节点
+        this.head.prev = foundNode;
+
+        // step2: 当前节点的下一个节点指针设置成之前的头部节点
+        foundNode.next = this.head;  
+
+        // step3: 头部节点替换成当前节点
+        this.head = foundNode;
+
+        // step4: 当前节点的前一个节点指针设置为null
+        foundNode.prev = null;
+
+        
+        //--------------
+        return foundNode.value;
+    }
+
+}
+
+
+// 注意缓存cache输出的顺序，和哈希表的有区别
+
 const cache = new LRU(2); // 缓存容量为2
 cache.set("red", "red"); //缓存 {red=red}
-cache.set("grey", "grey"); //缓存 {red=red, grey=grey}
+cache.set("grey", "grey"); //缓存 {grey=grey, red=red}
 //----
 
 const param_1 = cache.get("red");
 console.log(param_1); // red (从缓存中获取)
 //----
 
-cache.set("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {red=red, yellow=yellow}
+cache.set("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {yellow=yellow, red=red}
 //----
 
 const param_2 = cache.get("grey");
