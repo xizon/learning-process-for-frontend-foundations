@@ -1160,8 +1160,6 @@ console.log( fibonacci(5) ); // 8
 
 
 
-
-
 ### 翻转(反转)单链表
 ----
 
@@ -1181,6 +1179,69 @@ console.log( fibonacci(5) ); // 8
  ↑  ↑
  值 指针
 ```
+
+
+
+#### 过程 (注意：这其实是类似一个"传递性"的问题)
+------------------------------------------
+
+传递性关系结构： 若 B = CD, 则 AB = ACD
+
+```base
+
+[node(A):next(B)]     ->    [node(B):next(C)]      ->    [node(C):next(NULL)]
+
+ 
+ - 将 tmp 存储为旧的next节点， 当前节点的 next 节点设置为 previous
+ - while循环将按次序传入 node(A), node(B), node(C)
+ - ▲ 表示相对应
+
+
+第一步：变量值
+
+previous     ->     previous     ->     previous 
+   ↑                  ↑                    ↑       
+  NULL               node(A)             node(B)
+  
+  
+  
+  tmp     ->         tmp     ->           tmp 
+   ↑                  ↑                    ↑       
+  node(B)           node(C)               NULL
+  
+
+第二步：设置传入的节点的 next 为 previous
+
+
+[node(A):next(NULL)]     ->    [node(B):next(A)]      ->   [node(C):next(B)]
+
+
+
+第三步：previous 重新赋值为当前 node， 完成和原节点的调换
+
+
+previous         ->            previous          ->        previous 
+   ↑                              ↑                           ↑       
+[node(A):next(NULL)]     ->    [node(B):next(A)]      ->    [node(C):next(B)]
+                                                                    ▲
+
+
+第四步：当前 node 重新赋值为 tmp
+
+
+[node(B):next(A)]     ->    [node(C):next(B)]      ->   NULL
+                                   ▲
+
+
+第五步：由于 node(B)的next是A, 所以 C 节点
+
+[node(C):next(B)] 相当于  [node(C):next([node(B):next(A)])]
+
+所以最终结果返回第三步的最后一个 previous 的值即可
+
+```
+
+
 
 #### 解法
 ```js
@@ -1203,6 +1264,7 @@ function LinkedListNode(value) {
 
 
 //迭代法 => 时间复杂度O(n)  空间复杂度 O(1)
+//------------------------
 function reverseLinkedList(head) {
     let node = head,
         previous = null,  // 前一个节点指针,默认设置一个null值，否则反转后最后的结果会缺少next的null值
@@ -1218,6 +1280,8 @@ function reverseLinkedList(head) {
 
         // 在列表中前进
         previous = node;
+
+        // 基线条件(当node为null时跳出while循环)
         node = tmp;
     }
 
@@ -1227,11 +1291,12 @@ function reverseLinkedList(head) {
 
 
 //递归 => 时间复杂度O(n)  空间复杂度 O(n)
-function reverseLinkedList2(head) {
+//------------------------
+function reverseLinkedList(head) {
     if (!head || !head.next) {
         return head;
     }
-    let tmp = reverseLinkedList2(head.next);
+    let tmp = reverseLinkedList(head.next);
     head.next.next = head;
     head.next = null;
     return tmp;
@@ -1313,96 +1378,146 @@ LRU是Least Recently Used的缩写，即最近最少使用，是一种常用的�
 
 ```
 
+ 
+ 
+#### 解法1(使用哈希表)
+```js
+class LRU {
+    constructor(max = 10) {
+        this.max = max;
+        this.cache = new Map();
+    }
 
-#### 解法
+    get(key) {
+        let item = this.cache.get(key);
+        if (item) {
+            // 刷新键
+            this.cache.delete(key);
+            this.cache.set(key, item);
+        }
+        return item;
+    }
+
+    set(key, val) {
+        // 刷新键
+        if (this.cache.has(key)) this.cache.delete(key);
+
+        // 驱逐最旧的元素
+        else if (this.cache.size == this.max) this.cache.delete(this.first());
+        this.cache.set(key, val);
+    }
+
+    first() {
+        return this.cache.keys().next().value;
+    }
+}
+```
+
+
+#### 解法2(使用双链表)：
+
+在双向链表中，将 head 设为最近使用的并将 tail 设为最近最少使用的。
+
+ - 在头部进行每次插入。
+ - 在每次读取或更新操作时，将节点与其位置分离，并将其附加到 LinkedList 的头部。 请记住，LRU 是根据对缓存的读取和写入操作来表示的。
+ - 当缓存限制超过时，从尾部删除一个节点
 
 ```js
-//初始化LRU
-function LRUCache(capacity) {
-    this.capacity = capacity;
-    this.map = new Map(); // this stores the entire array
-
-    // this is boundaries for double linked list
-    this.head = {};
-    this.tail = {};
-
-    this.head.next = this.tail; // initialize your double linked list
-    this.tail.prev = this.head;
+class Node {
+    constructor(key, value, next = null, prev = null) {
+        this.key = key;
+        this.value = value;
+        this.next = next;
+        this.prev = prev;
+    }
 }
 
-// 该操作将返回键的值，如果存在，则返回-1。
-LRUCache.prototype.get = function (key) {
-    if (this.map.has(key)) {
-
-        // 从当前位置删除元素
-        let c = this.map.get(key);
-        c.prev.next = c.next;
-        c.next.prev = c.prev;
-
-        this.tail.prev.next = c; // 在最后一个元素之后插入它 (尾部前的元素)
-        c.prev = this.tail.prev; // 更新 c.prev 和 next 指针
-        c.next = this.tail;
-        this.tail.prev = c; // 将最后一个元素更新为尾部
-
-        return c.value;
-    } else {
-        return -1;
+class LRU {
+    constructor(limit = 10) {
+        this.size = 0;
+        this.limit = limit;
+        this.head = null;
+        this.tail = null;
+        this.cacheMap = {};
     }
-};
 
-
-// 该操作将更新键值
-// 如果找到，将键和值对添加到缓存中。 如果键的数量超过了缓存的初始化容量，则驱逐最近最少访问的项目。
-LRUCache.prototype.put = function (key, value) {
-    if (this.get(key) !== -1) {
-        // 如果键不存在，则更新最后一个元素值
-        this.tail.prev.value = value;
-    } else {
-        // 检查map大小是否达到容量
-        if (this.map.size === this.capacity) {
-
-            //删除项目
-            //---------
-            this.map.delete(this.head.next.key); // 删除列表的第一个元素
-            this.head.next = this.head.next.next; // 将第一个元素更新为下一个元素
-            this.head.next.prev = this.head;
+    set(key, value) {
+        const existingNode = this.cacheMap[key];
+        if (existingNode) {
+            this.detach(existingNode);
+            this.size--;
+        } else if (this.size === this.limit) {
+            delete this.cacheMap[this.tail.key];
+            this.detach(this.tail);
+            this.size--;
         }
 
-        // 哈希表
-        let newNode = {
-            value,
-            key,
-        };
+        // 写入 LinkedList 的头部
+        if (!this.head) {
+            this.head = this.tail = new Node(key, value);
+        } else {
+            const node = new Node(key, value, this.head);
+            this.head.prev = node;
+            this.head = node;
+        }
 
-        // 添加节点
-        //---------
-        this.map.set(key, newNode); //将当前节点添加到地图
-        this.tail.prev.next = newNode; // 将节点添加到列表末尾
-        newNode.prev = this.tail.prev; // 更新 newNode 的 prev 和 next 指针
-        newNode.next = this.tail;
-        this.tail.prev = newNode; // 更新最后一个元素
+        // 使用链表键和节点引用更新缓存映射
+        this.cacheMap[key] = this.head;
+        this.size++;
     }
-};
+
+    get(key) {
+        const existingNode = this.cacheMap[key];
+        if (existingNode) {
+            const value = existingNode.value;
+            // 如果尚未将该节点设为 LinkedList 的新 Head
+            if (this.head !== existingNode) {
+                // 自动从它的位置删除节点并使其成为一个新的头，即最常用的
+                this.set(key, value);
+            }
+            return value;
+        }
+
+        return undefined;
+    }
 
 
+    //分离
+    detach(node) {
+        if (node.prev !== null) {
+            node.prev.next = node.next;
+        } else {
+            this.head = node.next;
+        }
+
+        if (node.next !== null) {
+            node.next.prev = node.prev;
+        } else {
+            this.tail = node.prev;
+        }
+    }
+
+}
+```
 
 
-const lRUCache = new LRUCache(2); // 缓存容量为2
-lRUCache.put("red", "red"); //缓存 {red=red}
-lRUCache.put("grey", "grey"); //缓存 {red=red, grey=grey}
+#### 结果测试
+```js
+const cache = new LRU(2); // 缓存容量为2
+cache.set("red", "red"); //缓存 {red=red}
+cache.set("grey", "grey"); //缓存 {red=red, grey=grey}
 //----
 
-const param_1 = lRUCache.get("red");
+const param_1 = cache.get("red");
 console.log(param_1); // red (从缓存中获取)
 //----
 
-lRUCache.put("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {red=red, yellow=yellow}
+cache.set("yellow", "yellow"); // 添加新键，超过了容量，则grey将被淘汰，缓存有 {red=red, yellow=yellow}
 //----
 
-const param_2 = lRUCache.get("grey");
-console.log(param_2); // -1
+const param_2 = cache.get("grey");
+console.log(param_2); // undefined
 //----
-
 ```
 
 
@@ -1476,7 +1591,7 @@ class Queue {
     deQueue() {
         // 如果第一个栈为空
         if (this.s1.length == 0) {
-            document.write("Q is Empty");
+            console.log( '队列为空' );
         }
 
         // 返回 s1 的顶部
@@ -1826,7 +1941,7 @@ function longestUniqueSubstr2(str) {
 }
 
 
-// 使用字典(时间复杂度 O(n + d))
+// 使用哈希表(时间复杂度 O(n + d))
 //------------------------
 function longestUniqueSubstr3(s) {
     let seen = new Map();
