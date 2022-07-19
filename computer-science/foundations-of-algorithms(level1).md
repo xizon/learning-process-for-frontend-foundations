@@ -1598,6 +1598,36 @@ class LRU {
         // step5: 计数+1
         this.size++;
 
+        /*
+        
+        第一步(原链表):
+        
+            [prev:1:next]       ->        [prev:2:next]
+                  ↑
+                 head 
+        
+        
+        
+        第二步(新节点和原head的互换):
+        
+             ┌┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┐
+           [prev:1:next]            [prev:3:next]            ->       [prev:2:next]
+                 ↑                        ↑
+               原head                 newNode(尚未加入链表) 
+         
+         
+               
+        第三步(形成新的链表,多个一个元素到链中，节点1的next指针没有改变):  
+               
+            null   节点1                  节点3    节点2
+             ↓       ↓                      ↓       ↓
+           [prev:3:next]       ->         [prev:1:next]       ->        [prev:2:next]
+                 ↑                              ↑
+                新head(newNode)               原head
+        
+        */
+
+
         
         //添加到缓存
         //--------------
@@ -1626,10 +1656,10 @@ class LRU {
         //--------------
         if (foundNode === this.tail) {
             if (foundNodePrev) foundNodePrev.next = null;  // 前一个节点的下一个指针变成null
-            this.tail = foundNodePrev; // 尾部节点替换成前一个节点 (当前节点依然存在，然后下一步时当前节点将会移动到头部位置)
+            this.tail = foundNodePrev; // 尾部节点替换成前一个节点 (当前节点依然存在，然后下一步时当前节点会作为"新节点"移动到头部位置)
         }
 
-        // 如果当前节点居于头尾之间 (要将当前节点的prev和next指针拆开，分配到当前节点的前后节点指针中, 然后下一步时当前节点将会移动到头部位置)
+        // 如果当前节点居于头尾之间 (要将当前节点的prev和next指针拆开，分配到当前节点的前后节点指针中, 然后下一步时当前节点会作为"新节点"移动到头部位置)
         //--------------
         if (foundNode !== this.head && foundNode !== this.tail) {
             if (foundNodePrev) foundNodePrev.next = foundNodeNext;  // 前一个节点的下一个指针变成当前节点的后一个节点
@@ -1637,7 +1667,7 @@ class LRU {
         }
 
         
-        // 节点添加到头部（step1~4）
+        // 节点添加到头部（step1~4, 元素size没有改变）
         //--------------
         // step1: 头部的前一个节点指针设置为当前节点
         this.head.prev = foundNode;
@@ -1650,6 +1680,41 @@ class LRU {
 
         // step4: 当前节点的前一个节点指针设置为null
         foundNode.prev = null;
+
+        /*
+        
+        第一步(原链表, [prev:0:next]表示原head):
+        
+           [prev:3:next]       ->        [prev:4:next]         ->       [prev:5:next]
+                                               ↑
+                                           foundNode
+                                              
+        
+        第二步(当前节点的指针拆解):
+        
+                     ┌┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┐
+           [prev:3:next]       ->        [prev:4:next]         ->       [prev:5:next]
+                                            └┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┘
+           
+
+               
+        第三步(形成新的指针):  
+               
+           [prev:3:next]       ->        [prev:4:next]         ->       [prev:5:next]
+                    ↑                                                      ↑
+                  节点5                                                   节点3
+    
+    
+        第四步(节点4将被作为 "新节点" 移动到头部): 
+        
+                                                  
+ 
+           [prev:4:next]    ->   [prev:0:next]   ->  [prev:3:next]   ->    [prev:5:next]
+                 ↑                     ↑                      ↑              ↑
+          新head(foundNode)          原head                  节点5           节点3
+    
+    
+        */
 
         
         //--------------
