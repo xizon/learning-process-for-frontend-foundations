@@ -856,6 +856,13 @@ describe("Tests", () => {
 
 
 #### 基础解法：
+
+**原理：**
+
+ - 1.将字符串拆成两个部分
+ - 2.第一部分入栈
+ - 3.第二部分判断是否和第一部分匹配
+
 ```js
 const validParentheses = (s) => {
   if (s.length % 2 !== 0) return false;
