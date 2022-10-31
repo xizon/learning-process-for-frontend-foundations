@@ -1515,17 +1515,18 @@ function arrayConversion(arr) {
 ```js
 function arrayConversion(arr) {
     return arr.reduce((acc, cur, i) => {
-        // (1) 初次调用的返回值acc为初始值 []，它是一个数组，所以将 cur 元素合并进去
-        // (2 )每次执行 acc.pop()后，如果acc依然是个数组，而不是字符串，就将 cur 元素合并进去
-        if (acc.length === 0 || acc[acc.length - 1].length === 2) {
+        // (1) 初次调用的返回值acc为初始值 []，它是一个数组，所以将 cur 元素合并进去(入栈)
+        // (2) 如果acc的栈顶依然是个数组，而不是字符串，就将 cur 元素合并进去(入栈后其实整个acc是一个数组和字符串的混合模式)
+        if (acc.length === 0 || Array.isArray(acc.at(-1))) {
             return [...acc, cur];
         }
 
-        //取出那个数组和字符串混合的字符串元素，组合成一个新的二维数组(完成分组)
+        //取出栈顶元素，组合成一个新的二维数组(完成分组)
         const lastVal = acc.pop();
         return [...acc, [lastVal, cur]];
     }, []);
 }
+
 ```
 
 
