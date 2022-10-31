@@ -10,6 +10,7 @@
  - [验证二叉搜索树](#验证二叉搜索树)
  - [字符串字符计数](#字符串字符计数)
  - [插入五](#插入五)
+ - [将一个数组分割成多个二维数组的组合(自定义题目)](#将一个数组分割成多个二维数组的组合自定义题目)
 
 
 ### 返回最大和最小的数字
@@ -1458,3 +1459,63 @@ function insertFive(a) {
 
 注：算法中的所有 '5' 均可改为纯数字类型 5 (不加引号)
 
+
+
+
+
+
+### 将一个数组分割成多个二维数组的组合(自定义题目)
+----
+
+
+将一个数组分割成多个二维数组的组合，例如['a','b','c','d','e','f']将分割成  [["a","b"],["c","d"],["e","f"]]
+
+#### 测试
+```js
+const chai = require("chai");
+const assert = chai.assert;
+chai.config.truncateThreshold=0; // 禁用截断"断言错误中实际值和预期值的长度阈值"
+
+
+describe("Tests", () => {
+  it("should pass sample tests", () => {
+    assert.deepEqual(arrayConversion(['a','b','c','d','e','f']), [["a","b"],["c","d"],["e","f"]]); 
+    assert.deepEqual(arrayConversion(['a','b','c','d']), [["a","b"],["c","d"]]);    
+  });
+});
+```
+
+
+#### 索引填充：
+```js
+function arrayConversion(arr) {
+  return Array.from({ length: arr.length/2 }).map( (item, i) => [arr[2*(i)], arr[2*(i+1)-1]]);
+}
+```
+
+
+
+#### 正则匹配：
+```js
+function arrayConversion(arr) {
+  return JSON.stringify(arr).match(/"(.*?)","(.*?)"/g).map(x => {
+      return x.replace(/"(.*?)"/g, '$1').split(',')
+  });
+}
+```
+
+
+
+
+#### reduce增量分割：
+```js
+function arrayConversion(arr) {
+    return arr.reduce((acc, cur, i) => {
+        if (acc.length === 0 || acc[acc.length - 1].length === 2) {
+            return [...acc, cur];
+        }
+        const lastVal = acc.pop();
+        return [...acc, [lastVal, cur]];
+    }, []);
+}
+```
