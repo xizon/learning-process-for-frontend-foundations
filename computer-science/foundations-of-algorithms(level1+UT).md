@@ -1489,8 +1489,10 @@ describe("Tests", () => {
 #### 索引填充：
 ```js
 function arrayConversion(arr) {
+  //数学计算，索引满足等差数列
   return Array.from({ length: arr.length/2 }).map( (item, i) => [arr[2*(i)], arr[2*(i+1)-1]]);
 }
+
 ```
 
 
@@ -1499,23 +1501,67 @@ function arrayConversion(arr) {
 ```js
 function arrayConversion(arr) {
   return JSON.stringify(arr).match(/"(.*?)","(.*?)"/g).map(x => {
+      //过滤一下分组后的item
       return x.replace(/"(.*?)"/g, '$1').split(',')
   });
 }
+
 ```
 
 
 
 
-#### reduce增量分割：
+#### 增量分割：
 ```js
 function arrayConversion(arr) {
     return arr.reduce((acc, cur, i) => {
+        // (1) 初次调用的返回值acc为初始值 []，它是一个数组，所以将 cur 元素合并进去
+        // (2 )每次执行 acc.pop()后，如果acc依然是个数组，而不是字符串，就将 cur 元素合并进去
         if (acc.length === 0 || acc[acc.length - 1].length === 2) {
             return [...acc, cur];
         }
+
+        //取出那个数组和字符串混合的字符串元素，组合成一个新的二维数组(完成分组)
         const lastVal = acc.pop();
         return [...acc, [lastVal, cur]];
     }, []);
 }
+```
+
+
+#### 减量分割：
+```js
+function arrayConversion(arr) {
+    return arr.map((item, i) => {
+        if (i < 2) arr.push(null);  //由于每次减少两个元素，最终结果想要循环 arr.length/2 次，就需要在末尾处增加2个空元素
+        return arr.splice(0, 2);   //每次减少两个元素并覆盖原数组
+    }).filter(x => x !== null);
+}
+
+```
+
+
+#### 矩阵法：
+
+前面四种方法都是从过程入手，逐一求得最终结果，那么换种思路，从结果入手，我们先来创造一个想要的结果的模版
+
+
+```js
+function arrayConversion(arr) {
+
+    // 创建一个 3x2 的辅助矩阵，用来记忆结果
+    const row = arr.length / 2;
+    const column = 2;
+    const matrix = Array(row).fill(0).map(x => Array(column).fill(0));
+
+    // 把矩阵的坐标和原数组的索引一一对应即可, 矩阵的坐标为 matrix[x][y]
+    for (let i = 0; i < row; i++) {
+        for (let j = 0; j < column; j++) {
+            matrix[i][j] = arr[j + i * 2]; // 将笛卡尔坐标系转化成一维数组的角标
+        }
+    }
+
+    return matrix;
+}
+
 ```
