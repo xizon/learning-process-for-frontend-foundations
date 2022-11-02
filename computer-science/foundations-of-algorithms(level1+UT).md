@@ -1566,3 +1566,31 @@ function arrayConversion(arr) {
 }
 
 ```
+
+
+
+#### 利用函数周期性：
+
+直接使用循环和 %2 可以分组，也是最常用的方式，但是我们增加一点趣味性，换一种判断方法
+
+回想一下正弦函数 sinΘ 的图像，从角度 0 出发，每增加 π/2 ，结果就回到 0，也就是sin的值域满足一个周期。那么我们也可以不使用除以2来取余数判断分组，利用正弦函数来分组，也就是只要sinΘ 等于 1，那它就完成一次分组
+
+JS里的正弦函数的参数不使用角度而是用弧度表示，所以我们将角度转换一下弧度
+
+```js
+function arrayConversion(arr) {
+
+    let { length } = arr;
+    const newArr = [];
+    arr.reverse(); //反转一下数组元素，我们使用while循环
+    while (length > 0) {
+        length--;
+        if (Math.abs(Math.sin(length * (Math.PI / 2))) === 1) {   // sin的周期性,Math.PI/2弧度相当于90度的角
+            newArr.push([arr[length], arr[length - 1]]);
+        }
+
+    }
+    return newArr;
+}
+
+```
