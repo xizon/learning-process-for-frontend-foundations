@@ -18,7 +18,11 @@
 #### 面向对象设计的原则：
 - a)针对接口编程，而不是针对实现编程 
 - b) 优先使用对象组合，而不是类继承(组合和继承也经常同时使用)
+
+#### 鸭子类型：
+只关心对象的行为，不关心对象本身（起源：意大利软件工程师、Python软件基金会研究员Alex Martelli 于2000年左右在Python的邮件组中最早将这个概念引入了程序设计范畴中。）
     
+
 
 ## 分类
 
@@ -47,7 +51,7 @@
  - [Bridge](#Bridge)
  - [Composite](#Composite)
  - [Decorator](#Decorator)
- - [Façade](#Façade)
+ - [Facade](#Facade)
  - [Flyweight](#Flyweight)
  - [Proxy](#Proxy)
  - [Chain of Responsibility](#Chain-of-Responsibility)
@@ -71,12 +75,21 @@
 
 一个类的唯一实例（提供一个访问它的全局访问点）
 
+
+**● 使用场景 ●** 
+
+当我创建了一个JS库，为了方便全站使用，并且有一个醒目的调用名字，可以把它导出为一个唯一的实例，这个实例可以是惰性单例(是指在需要的时候才创建,即使用new关键字)，但是我常常会直接把工具类的单例new之后再导出，这样就可以在脚本中直接调用。
+
+重要特点是每次请求只能创建一个实例。
+
+
+
 ```js
-var Singleton = (function () {
-    var instance;
+const Singleton = (function () {
+    let instance;
 
     function createInstance() {
-        var object = new Object("I am the instance");
+        const object = new Object("I am the instance");
         return object;
     }
 
@@ -91,12 +104,11 @@ var Singleton = (function () {
 })();
 
 function run() {
-
-    var instance1 = Singleton.getInstance();
-    var instance2 = Singleton.getInstance();
-
-    console.log("Same instance? " + (instance1 === instance2));
+    const instance1 = Singleton.getInstance();
+    const instance2 = Singleton.getInstance();
+    console.log("Same instance? " + (instance1 === instance2));  
 }
+run();  // Same instance? true
 ```
 
 
@@ -108,6 +120,10 @@ function run() {
 **● 可变的方面 ●** 
 
 产品对象家族（创建相关或相互依赖的结构，无需指定具体类）
+
+**● 使用场景 ●** 
+
+不在 JavaScript 中直接使用,  而是声明一个用于创建产品的接口。
 
 
 ```js
@@ -141,20 +157,29 @@ function VendorFactory() {
     };
 }
 
+
 function run() {
-    var persons = [];
-    var employeeFactory = new EmployeeFactory();
-    var vendorFactory = new VendorFactory();
+    const persons = [];
+    const employeeFactory = new EmployeeFactory();
+    const vendorFactory = new VendorFactory();
 
     persons.push(employeeFactory.create("Joan DiSilva"));
     persons.push(employeeFactory.create("Tim O'Neill"));
     persons.push(vendorFactory.create("Gerald Watson"));
     persons.push(vendorFactory.create("Nicole McNight"));
 
-    for (var i = 0, len = persons.length; i < len; i++) {
+    for (let i = 0, len = persons.length; i < len; i++) {
         persons[i].say();
     }
 }
+run();
+/*
+I am employee Joan DiSilva
+I am employee Tim O'Neill
+I am vendor Gerald Watson
+I am vendor Nicole McNight
+*/
+
 ```
 
 
@@ -167,9 +192,13 @@ function run() {
 
 如何创建一个组合对象
 
+**● 使用场景 ●** 
+
+不在 JavaScript 中直接使用,  builder用于声明用于创建复杂产品的多个接口（也可以说成需要多个步骤才能创建出一个复杂的产品）。
+
 ```js
-function Shop() {
-    this.construct = function (builder) {
+class Shop {
+    init(builder) {
         builder.step1();
         builder.step2();
         return builder.get();
@@ -179,69 +208,48 @@ function Shop() {
 function CarBuilder() {
     this.car = null;
 
-    this.step1 = function () {
-        this.car = new Car();
-    };
-
-    this.step2 = function () {
-        this.car.addParts();
-    };
-
-    this.get = function () {
-        return this.car;
-    };
+    this.step1 = () => this.car = new Car();
+    this.step2 = () => this.car.addParts();
+    this.get = () => this.car;
 }
 
 function TruckBuilder() {
     this.truck = null;
 
-    this.step1 = function () {
-        this.truck = new Truck();
-    };
-
-    this.step2 = function () {
-        this.truck.addParts();
-    };
-
-    this.get = function () {
-        return this.truck;
-    };
+    this.step1 = () => this.truck = new Truck();
+    this.step2 = () => this.truck.addParts();
+    this.get = () => this.truck;
 }
 
 function Car() {
     this.doors = 0;
 
-    this.addParts = function () {
-        this.doors = 4;
-    };
-
-    this.say = function () {
-        console.log("I am a " + this.doors + "-door car");
-    };
+    this.addParts = () => this.doors = 4;
+    this.say = () => console.log("I am a " + this.doors + "-door car");
 }
 
 function Truck() {
     this.doors = 0;
 
-    this.addParts = function () {
-        this.doors = 2;
-    };
-
-    this.say = function () {
-        console.log("I am a " + this.doors + "-door truck");
-    };
+    this.addParts = () => this.doors = 2;
+    this.say = () => console.log("I am a " + this.doors + "-door truck");
 }
 
 function run() {
-    var shop = new Shop();
-    var carBuilder = new CarBuilder();
-    var truckBuilder = new TruckBuilder();
-    var car = shop.construct(carBuilder);
-    var truck = shop.construct(truckBuilder);
+    const shop = new Shop();
+    const carBuilder = new CarBuilder();
+    const truckBuilder = new TruckBuilder();
+    const car = shop.init(carBuilder);
+    const truck = shop.init(truckBuilder);
 
     car.say();
     truck.say();
 }
+run();
+/*
+I am a 4-door car
+I am a 2-door truck
+*/
 ```
 
 
@@ -254,23 +262,28 @@ function run() {
 
 被实例化的子类（定义一个用于创建对象的接口，让子类决定将哪一个类实例化）
 
-```js
-var Factory = function () {
-    this.createEmployee = function (type) {
-        var employee;
 
-        if (type === "fulltime") {
-            employee = new FullTime();
-        } else if (type === "parttime") {
+**● 使用场景 ●** 
+
+Factory创建新产品的“工厂”对象, 所有产品都支持相同的接口（属性和方法）。
+
+
+```js
+const Factory = function () {
+    this.createEmployee = function (type) {
+        let employee;
+
+        switch(type) {
+            case 'fulltime' :
+                employee = new FullTime();
+                break;
+            case 'parttime' :
             employee = new PartTime();
-        } else if (type === "temporary") {
-            employee = new Temporary();
-        } else if (type === "contractor") {
-            employee = new Contractor();
+            break;
+
         }
 
         employee.type = type;
-
         employee.say = function () {
             console.log(this.type + ": rate " + this.hourly + "/hour");
         }
@@ -279,36 +292,32 @@ var Factory = function () {
     }
 }
 
-var FullTime = function () {
-    this.hourly = "$12";
+const FullTime = function () {
+    this.hourly = "$25";
 };
 
-var PartTime = function () {
-    this.hourly = "$11";
+const PartTime = function () {
+    this.hourly = "$8";
 };
 
-var Temporary = function () {
-    this.hourly = "$10";
-};
-
-var Contractor = function () {
-    this.hourly = "$15";
-};
 
 function run() {
 
-    var employees = [];
-    var factory = new Factory();
+    const employees = [];
+    const factory = new Factory();
 
     employees.push(factory.createEmployee("fulltime"));
     employees.push(factory.createEmployee("parttime"));
-    employees.push(factory.createEmployee("temporary"));
-    employees.push(factory.createEmployee("contractor"));
 
-    for (var i = 0, len = employees.length; i < len; i++) {
+    for (let i = 0, len = employees.length; i < len; i++) {
         employees[i].say();
     }
 }
+run();
+/*
+fulltime: rate $25/hour
+parttime: rate $8/hour
+*/
 ```
 
 
@@ -322,20 +331,28 @@ function run() {
 
 被实例化的类
 
+
+**● 使用场景 ●** 
+
+可以通过原型克隆来创建一个新对象。
+
 ```js
-function CustomerPrototype(proto) {
-    this.proto = proto;
+class CustomerPrototype {
+    constructor(product) {
+        this.productAttrs = product;
+    }
 
-    this.clone = function () {
-        var customer = new Customer();
-
-        customer.first = proto.first;
-        customer.last = proto.last;
-        customer.status = proto.status;
+    clone() {
+        const customer = new Customer();
+        customer.first = this.productAttrs.first;
+        customer.last = this.productAttrs.last;
+        customer.status = this.productAttrs.status;
 
         return customer;
-    };
+    }
+    
 }
+
 
 function Customer(first, last, status) {
 
@@ -344,19 +361,26 @@ function Customer(first, last, status) {
     this.status = status;
 
     this.say = function () {
-        console.log("name: " + this.first + " " + this.last +
-            ", status: " + this.status);
+        return `name: ${this.first} ${this.last}, status: ${this.status}`;
     };
 }
 
 function run() {
 
-    var proto = new Customer("n/a", "n/a", "pending");
-    var prototype = new CustomerPrototype(proto);
+    const product = new Customer("F", "L", "pending");
+    console.log( 'product: ', product.say() );
 
-    var customer = prototype.clone();
-    customer.say();
+    //
+    const newProduct = new CustomerPrototype(product);
+    const customer = newProduct.clone();
+    console.log( 'newProduct: ', customer.say() );
+    
 }
+run();
+/*
+product:  name: F L, status: pending
+newProduct:  name: F L, status: pending
+*/
 ```
 
 
@@ -370,36 +394,35 @@ function run() {
 
 对象的接口（将一个类的接口转化为另一个解决兼容性）
 
+**● 使用场景 ●** 
+
+客户端调用适配器请求服务后，实现客户期望的接口。同样的输入，可以变成不同的输出或者界面。
+
+
 ```js
 // old interface
-
 function Shipping() {
-    this.request = function (zipStart, zipEnd, weight) {
-        // ...
-        return "$49.75";
+    this.request = function (weight) {
+        return parseFloat(weight) * 1.5;
     }
 }
 
 // new interface
-
 function AdvancedShipping() {
     this.login = function (credentials) { /* ... */ };
-    this.setStart = function (start) { /* ... */ };
-    this.setDestination = function (destination) { /* ... */ };
-    this.calculate = function (weight) { return "$39.50"; };
+    this.calculate = function (weight) { 
+        return parseFloat(weight) * 2.5;
+    };
 }
 
 // adapter interface
-
 function ShippingAdapter(credentials) {
-    var shipping = new AdvancedShipping();
+    const shipping = new AdvancedShipping();
 
     shipping.login(credentials);
 
     return {
-        request: function (zipStart, zipEnd, weight) {
-            shipping.setStart(zipStart);
-            shipping.setDestination(zipEnd);
+        request: function (weight) {
             return shipping.calculate(weight);
         }
     };
@@ -407,21 +430,23 @@ function ShippingAdapter(credentials) {
 
 function run() {
 
-    var shipping = new Shipping();
-    var credentials = { token: "30a8-6ee1" };
-    var adapter = new ShippingAdapter(credentials);
+    const shipping = new Shipping();
+    const credentials = { token: "30a8-6ee1" };
+    const adapter = new ShippingAdapter(credentials);
 
-    // original shipping object and interface
+    let cost = shipping.request("2kg");
+    console.log("Old cost: $" + cost);
 
-    var cost = shipping.request("78701", "10010", "2 lbs");
-    console.log("Old cost: " + cost);
-
-    // new shipping object with adapted interface
-
-    cost = adapter.request("78701", "10010", "2 lbs");
-
-    console.log("New cost: " + cost);
+    //
+    cost = adapter.request("2kg");
+    console.log("New cost: $" + cost);
 }
+run();
+/*
+Old cost: $3
+New cost: $5
+*/
+
 ```
 
 
@@ -435,59 +460,40 @@ function run() {
 
 对象的实现（抽象与实现分离）
 
+
+**● 使用场景 ●** 
+
+不在 JavaScript 中直接使用，实现和扩展抽象定义的接口。（属性和方法相同，可能存在接口覆盖，改变其输出的结果）
+
 ```js
 // input devices
-
-var Gestures = function (output) {
+const EventGestures = function (output) {
     this.output = output;
 
     this.tap = function () { this.output.click(); }
     this.swipe = function () { this.output.move(); }
-    this.pan = function () { this.output.drag(); }
-    this.pinch = function () { this.output.zoom(); }
-};
-
-var Mouse = function (output) {
-    this.output = output;
-
-    this.click = function () { this.output.click(); }
-    this.move = function () { this.output.move(); }
-    this.down = function () { this.output.drag(); }
-    this.wheel = function () { this.output.zoom(); }
 };
 
 // output devices
-
-var Screen = function () {
+const Screen = function () {
     this.click = function () { console.log("Screen select"); }
     this.move = function () { console.log("Screen move"); }
-    this.drag = function () { console.log("Screen drag"); }
-    this.zoom = function () { console.log("Screen zoom in"); }
-};
-
-var Audio = function () {
-    this.click = function () { console.log("Sound oink"); }
-    this.move = function () { console.log("Sound waves"); }
-    this.drag = function () { console.log("Sound screetch"); }
-    this.zoom = function () { console.log("Sound volume up"); }
 };
 
 function run() {
-
-    var screen = new Screen();
-    var audio = new Audio();
-
-    var hand = new Gestures(screen);
-    var mouse = new Mouse(audio);
+    const screen = new Screen();
+    const hand = new EventGestures(screen);
 
     hand.tap();
     hand.swipe();
-    hand.pinch();
-
-    mouse.click();
-    mouse.move();
-    mouse.wheel();
 }
+
+run();
+/*
+Screen select
+Screen move
+*/
+
 ```
 
 
@@ -500,68 +506,66 @@ function run() {
 
 一个对象的结构和组成（单个对象和组合对象的使用一致性）
 
+**● 使用场景 ●** 
+
+使用Node(结点)来表示组合中的分支（或子树），维护子组件的集合。
+
 ```js
-var Node = function (name) {
-    this.children = [];
-    this.name = name;
-}
+class Node {
+    constructor(name) {
+        this.children = [];
+        this.name = name;
+    }
 
-Node.prototype = {
-    add: function (child) {
+    add(child) {
         this.children.push(child);
-    },
-
-    remove: function (child) {
-        var length = this.children.length;
-        for (var i = 0; i < length; i++) {
+    }
+    remove(child) {
+        const length = this.children.length;
+        for (let i = 0; i < length; i++) {
             if (this.children[i] === child) {
                 this.children.splice(i, 1);
                 return;
             }
         }
-    },
-
-    getChild: function (i) {
+    }
+    getChild(i) {
         return this.children[i];
-    },
-
-    hasChildren: function () {
-        return this.children.length > 0;
     }
+
 }
 
-// recursively traverse a (sub)tree
-
-function traverse(indent, node) {
-    console.log(Array(indent++).join("--") + node.name);
-
-    for (var i = 0, len = node.children.length; i < len; i++) {
-        traverse(indent, node.getChild(i));
-    }
-}
 
 function run() {
-    var tree = new Node("root");
-    var left = new Node("left")
-    var right = new Node("right");
-    var leftleft = new Node("leftleft");
-    var leftright = new Node("leftright");
-    var rightleft = new Node("rightleft");
-    var rightright = new Node("rightright");
+    const tree = new Node("root");
+    const left = new Node("left")
+    const right = new Node("right");
 
     tree.add(left);
     tree.add(right);
-    tree.remove(right);  // note: remove
+    tree.remove(right);
     tree.add(right);
 
-    left.add(leftleft);
-    left.add(leftright);
+    console.log(tree);
 
-    right.add(rightleft);
-    right.add(rightright);
-
-    traverse(1, tree);
 }
+
+run();
+/*
+{
+    "children": [
+        {
+            "children": [],
+            "name": "left"
+        },
+        {
+            "children": [],
+            "name": "right"
+        }
+    ],
+    "name": "root"
+}
+*/
 ```
 
 
@@ -575,8 +579,12 @@ function run() {
 
 对象的职责，不生成子类（动态添加职责）
 
+**● 使用场景 ●** 
+
+定义一个新的接口(符合原始组件的接口)，来扩展原组件的功能。
+
 ```js
-var User = function (name) {
+const User = function (name) {
     this.name = name;
 
     this.say = function () {
@@ -584,7 +592,7 @@ var User = function (name) {
     };
 }
 
-var DecoratedUser = function (user, street, city) {
+const DecoratedUser = function (user, street, city) {
     this.user = user;
     this.name = user.name;  // ensures interface stays the same
     this.street = street;
@@ -598,17 +606,22 @@ var DecoratedUser = function (user, street, city) {
 
 function run() {
 
-    var user = new User("Kelly");
+    const user = new User("Kelly");
     user.say();
 
-    var decorated = new DecoratedUser(user, "Broadway", "New York");
+    const decorated = new DecoratedUser(user, "Broadway", "New York");
     decorated.say();
 }
+run();
+/*
+User: Kelly
+Decorated User: Kelly, Broadway, New York
+*/
 ```
 
 
 
-## Façade 
+## Facade 
 **● 中文名 ●**
 
 外观
@@ -617,8 +630,12 @@ function run() {
 
 一个子系统的接口（定义一个高层接口，一致的界面）
 
+**● 使用场景 ●** 
+
+将目标请求委托给适当的子系统对象(例如：A对象传入，分别用函数a,b,c来运行A对象)，实现并执行专门的子系统功能，得出不同的结果。
+
 ```js
-var Mortgage = function (name) {
+const Mortgage = function (name) {
     this.name = name;
 }
 
@@ -626,34 +643,33 @@ Mortgage.prototype = {
 
     applyFor: function (amount) {
         // access multiple subsystems...
-        var result = "approved";
+        const status = "approved";
         if (!new Bank().verify(this.name, amount)) {
-            result = "denied";
+            status = "denied";
         } else if (!new Credit().get(this.name)) {
-            result = "denied";
+            status = "denied";
         } else if (!new Background().check(this.name)) {
-            result = "denied";
+            status = "denied";
         }
-        return this.name + " has been " + result +
-            " for a " + amount + " mortgage";
+        return `name: ${this.name}, status:  ${status}, amount: ${amount}`;
     }
 }
 
-var Bank = function () {
+const Bank = function () {
     this.verify = function (name, amount) {
         // complex logic ...
         return true;
     }
 }
 
-var Credit = function () {
+const Credit = function () {
     this.get = function (name) {
         // complex logic ...
         return true;
     }
 }
 
-var Background = function () {
+const Background = function () {
     this.check = function (name) {
         // complex logic ...
         return true;
@@ -661,11 +677,13 @@ var Background = function () {
 }
 
 function run() {
-    var mortgage = new Mortgage("Joan Templeton");
-    var result = mortgage.applyFor("$100,000");
+    const mortgage = new Mortgage("David");
+    const result = mortgage.applyFor("$100,000");
 
     console.log(result);
 }
+run();  // name: David, status:  approved, amount: $100,000
+
 ```
 
 
@@ -678,47 +696,54 @@ function run() {
 
 对象的存储开销（共享技术）
 
+**● 使用场景 ●** 
+
+调用享元工厂获取享元对象(享元工厂内可能会有多个对象)，根据对象是否存在，来维护要在应用程序之间共享的内部数据（可以输出数据，也可以处理数据）。也就是将原数据传递下去，共用，分析和处理它们的异同，根据异同来输出不同的结果，于此同时，不需要在其它函数上再次录入新的数据或者原数据。
+
 ```js
-function Flyweight(make, model, processor) {
+const Flyweight = function(make, model, processor) {
     this.make = make;
     this.model = model;
     this.processor = processor;
 };
 
-var FlyWeightFactory = (function () {
-    var flyweights = {};
 
-    return {
+class FlyWeightFactory {
+    static data = {};
 
-        get: function (make, model, processor) {
-            if (!flyweights[make + model]) {
-                flyweights[make + model] =
-                    new Flyweight(make, model, processor);
-            }
-            return flyweights[make + model];
-        },
-
-        getCount: function () {
-            var count = 0;
-            for (var f in flyweights) count++;
-            return count;
+    static get(make, model, processor) {
+        if ( this.data[`${make}-${model}`] === undefined ) {
+            this.data[`${make}-${model}`] = new Flyweight(make, model, processor);
         }
+        return this.data[`${make}-${model}`];
     }
-})();
+
+    static getCount() {
+        let count = 0;
+        for (const f in this.data) count++;
+        return count;
+    }
+}
 
 function ComputerCollection() {
-    var computers = {};
-    var count = 0;
+    const computers = {};
+    let count = 0;
+
+    
+    const Computer = function (make, model, processor, memory, tag) {
+        this.flyweight = FlyWeightFactory.get(make, model, processor);
+        this.memory = memory;
+        this.tag = tag;
+        this.getMake = function () {
+            return this.flyweight.make;
+        }
+        // ...
+    };
 
     return {
         add: function (make, model, processor, memory, tag) {
-            computers[tag] =
-                new Computer(make, model, processor, memory, tag);
+            computers[tag] = new Computer(make, model, processor, memory, tag);
             count++;
-        },
-
-        get: function (tag) {
-            return computers[tag];
         },
 
         getCount: function () {
@@ -727,30 +752,23 @@ function ComputerCollection() {
     };
 }
 
-var Computer = function (make, model, processor, memory, tag) {
-    this.flyweight = FlyWeightFactory.get(make, model, processor);
-    this.memory = memory;
-    this.tag = tag;
-    this.getMake = function () {
-        return this.flyweight.make;
-    }
-    // ...
-}
+
 
 function run() {
-    var computers = new ComputerCollection();
+    const computers = new ComputerCollection();
 
-    computers.add("Dell", "Studio XPS", "Intel", "5G", "Y755P");
-    computers.add("Dell", "Studio XPS", "Intel", "6G", "X997T");
-    computers.add("Dell", "Studio XPS", "Intel", "2G", "U8U80");
-    computers.add("Dell", "Studio XPS", "Intel", "2G", "NT777");
-    computers.add("Dell", "Studio XPS", "Intel", "2G", "0J88A");
+    computers.add("Dell", "XPS", "Intel", "5G", "Y755P");
+    computers.add("Dell", "XPS", "Intel", "6G", "X997T");
     computers.add("HP", "Envy", "Intel", "4G", "CNU883701");
-    computers.add("HP", "Envy", "Intel", "2G", "TXU003283");
 
     console.log("Computers: " + computers.getCount());
     console.log("Flyweights: " + FlyWeightFactory.getCount());
 }
+run();
+/*
+Computers: 3
+Flyweights: 2
+*/
 ```
 
 
@@ -763,28 +781,26 @@ function run() {
 
 如何访问一个对象；该对象的位置
 
+**● 使用场景 ●** 
+
+客户端调用代理请求操作，代理提供了最后的结果，并维护一个允许代理访问真实对象的引用。代理会处理各种请求，并转发到真正的对象中。
+
+代理缓存了频繁请求，如果对象未被缓存则执行真正的服务并将结果存储在缓存中。
+
 ```js
-function GeoCoder() {
-
+function RealOperation() {
     this.getLatLng = function (address) {
-
-        if (address === "Amsterdam") {
-            return "52.3700° N, 4.8900° E";
-        } else if (address === "London") {
-            return "51.5171° N, 0.1062° W";
-        } else if (address === "Paris") {
-            return "48.8742° N, 2.3470° E";
-        } else if (address === "Berlin") {
-            return "52.5233° N, 13.4127° E";
-        } else {
-            return "";
+        switch (address) {
+            case 'Amsterdam' : return "52.3700° N, 4.8900° E";
+            case 'London' : return "51.5171° N, 0.1062° W";
+            default : return '';
         }
     };
 }
 
 function GeoProxy() {
-    var geocoder = new GeoCoder();
-    var geocache = {};
+    const geocoder = new RealOperation();
+    const geocache = {};
 
     return {
         getLatLng: function (address) {
@@ -795,8 +811,8 @@ function GeoProxy() {
             return geocache[address];
         },
         getCount: function () {
-            var count = 0;
-            for (var code in geocache) { count++; }
+            let count = 0;
+            for (const code in geocache) { count++; }
             return count;
         }
     };
@@ -804,25 +820,32 @@ function GeoProxy() {
 
 function run() {
 
-    var geo = new GeoProxy();
-
-    // geolocation requests
+    const geo = new GeoProxy();
 
     geo.getLatLng("Paris");
     geo.getLatLng("London");
+    geo.getLatLng("Amsterdam");
+    geo.getLatLng("Amsterdam");
     geo.getLatLng("London");
-    geo.getLatLng("London");
-    geo.getLatLng("London");
-    geo.getLatLng("Amsterdam");
-    geo.getLatLng("Amsterdam");
-    geo.getLatLng("Amsterdam");
-    geo.getLatLng("Amsterdam");
     geo.getLatLng("London");
     geo.getLatLng("London");
 
     console.log("\nCache size: " + geo.getCount());
-    
+
 }
+run();
+/*
+
+Paris: 
+London: 51.5171° N, 0.1062° W
+Amsterdam: 52.3700° N, 4.8900° E
+Amsterdam: 52.3700° N, 4.8900° E
+London: 51.5171° N, 0.1062° W
+London: 51.5171° N, 0.1062° W
+London: 51.5171° N, 0.1062° W
+
+Cache size: 3
+*/
 ```
 
 
@@ -836,25 +859,37 @@ function run() {
 
 满足一个请求的对象（解除请求的发送者和接收者之间的耦合，使多个对象都有机会处理这个请求）
 
+**● 使用场景 ●** 
+
+就算很常用的原型链的写法，一个关键点就是方法中的 return, 要返回这个对象，这样才能形成后继的结果链。
+
 ```js
-var Request = function (amount) {
+const Request = function (amount) {
     this.amount = amount;
     console.log("Requested: $" + amount + "\n");
 }
 
 Request.prototype = {
     get: function (bill) {
-        var count = Math.floor(this.amount / bill);
+        const count = Math.floor(this.amount / bill);
         this.amount -= count * bill;
         console.log("Dispense " + count + " $" + bill + " bills");
-        return this;
+        return this; //关键
     }
 }
 function run() {
-    var request = new Request(378);
-
-    request.get(100).get(50).get(20).get(10).get(5).get(1);
+    const request = new Request(378);
+    request.get(100).get(50).get(20);
 }
+run();
+/*
+
+Requested: $378
+
+Dispense 3 $100 bills
+Dispense 1 $50 bills
+Dispense 1 $20 bills
+*/
 ```
 
 
@@ -868,40 +903,35 @@ function run() {
 
 何时、怎样满足一个请求（封装请求，参数化）
 
+**● 使用场景 ●** 
+
+客户端引用一个命令接收器(对象)，接收器知道如何执行与命令相关的操作。把这些命令和相关的函数绑定即可。
+
 ```js
 function add(x, y) { return x + y; }
 function sub(x, y) { return x - y; }
-function mul(x, y) { return x * y; }
-function div(x, y) { return x / y; }
 
-var Command = function (execute, undo, value) {
+const Command = function (execute, undo, value) {
     this.execute = execute;
     this.undo = undo;
     this.value = value;
 }
 
-var AddCommand = function (value) {
+const AddCommand = function (value) {
     return new Command(add, sub, value);
 };
 
-var SubCommand = function (value) {
+const SubCommand = function (value) {
     return new Command(sub, add, value);
 };
 
-var MulCommand = function (value) {
-    return new Command(mul, div, value);
-};
 
-var DivCommand = function (value) {
-    return new Command(div, mul, value);
-};
-
-var Calculator = function () {
-    var current = 0;
-    var commands = [];
+const Calculator = function () {
+    let current = 0;
+    const commands = [];
 
     function action(command) {
-        var name = command.execute.toString().substr(9, 3);
+        const name = command.execute.toString().substr(9, 3);
         return name.charAt(0).toUpperCase() + name.slice(1);
     }
 
@@ -913,7 +943,7 @@ var Calculator = function () {
         },
 
         undo: function () {
-            var command = commands.pop();
+            const command = commands.pop();
             current = command.undo(current, command.value);
             console.log("Undo " + action(command) + ": " + command.value);
         },
@@ -926,22 +956,27 @@ var Calculator = function () {
 
 function run() {
 
-    var calculator = new Calculator();
+    const calculator = new Calculator();
 
     // issue commands
-
     calculator.execute(new AddCommand(100));
     calculator.execute(new SubCommand(24));
-    calculator.execute(new MulCommand(6));
-    calculator.execute(new DivCommand(2));
 
     // reverse last two commands
-
-    calculator.undo();
     calculator.undo();
 
     console.log("\nValue: " + calculator.getCurrentValue());
 }
+run();
+/*
+
+Add: 100
+Sub: 24
+Undo Sub: 24
+
+Value: 100
+*/
+
 ```
 
 
@@ -955,8 +990,14 @@ function run() {
 **● 可变的方面 ●** 
 
 一个语言的文法及解释
+
+**● 使用场景 ●** 
+
+输入一个字符串，构建出这个字符串的相应的语法树，然后使用相应的表达式输出最后的结果。
+
+
 ```js
-var Context = function (input) {
+const Context = function (input) {
     this.input = input;
     this.output = 0;
 }
@@ -967,7 +1008,7 @@ Context.prototype = {
     }
 }
 
-var Expression = function (name, one, four, five, nine, multiplier) {
+const Expression = function (name, one, four, five, nine, multiplier) {
     this.name = name;
     this.one = one;
     this.four = four;
@@ -1001,21 +1042,26 @@ Expression.prototype = {
 }
 
 function run() {
-    var roman = "MCMXXVIII"
-    var context = new Context(roman);
-    var tree = [];
+    const roman = "MCMXXVIII"
+    const context = new Context(roman);
+    const tree = [];
 
     tree.push(new Expression("thousand", "M", " ", " ", " ", 1000));
     tree.push(new Expression("hundred", "C", "CD", "D", "CM", 100));
     tree.push(new Expression("ten", "X", "XL", "L", "XC", 10));
     tree.push(new Expression("one", "I", "IV", "V", "IX", 1));
 
-    for (var i = 0, len = tree.length; i < len; i++) {
+    for (let i = 0, len = tree.length; i < len; i++) {
         tree[i].interpret(context);
     }
 
     console.log(roman + " = " + context.output);
 }
+run();
+/*
+
+MCMXXVIII = 1928
+*/
 ```
 
 
@@ -1028,8 +1074,13 @@ function run() {
 
 如何遍历、访问一个聚合的各元素
 
+**● 使用场景 ●** 
+
+客户端调用迭代器(通常传入一个数组)，迭代器使用方法 first()、next() 等实现迭代器接口遍历对象。
+
 ```js
-var Iterator = function (items) {
+
+const Iterator = function (items) {
     this.index = 0;
     this.items = items;
 }
@@ -1049,7 +1100,7 @@ Iterator.prototype = {
         this.index = 0;
     },
     each: function (callback) {
-        for (var item = this.first(); this.hasNext(); item = this.next()) {
+        for (let item = this.first(); this.hasNext(); item = this.next()) {
             callback(item);
         }
     }
@@ -1057,22 +1108,33 @@ Iterator.prototype = {
 
 function run() {
 
-    var items = ["one", 2, "circle", true, "Applepie"];
-    var iter = new Iterator(items);
+    const items = ["one", 2, "three", true];
+    const iter = new Iterator(items);
 
     // using for loop
-
-    for (var item = iter.first(); iter.hasNext(); item = iter.next()) {
+    for (let item = iter.first(); iter.hasNext(); item = iter.next()) {
         console.log(item);
     }
-    console.log("");
+    console.log("-----");
 
     // using Iterator's each method
-
     iter.each(function (item) {
         console.log(item);
     });
 }
+run();
+/*
+
+one
+2
+three
+true
+-----
+one
+2
+three
+true
+*/
 ```
 
 
@@ -1085,8 +1147,13 @@ function run() {
 
 对象间怎样交互、和谁交互（用一个中介对象封装交互）
 
+**● 使用场景 ●** 
+
+中介者提供一个通信的接口(会有多个参与者加入，参与者作为参数传递给中介者)，维护和管理一个或者多个对象的引用。
+
+
 ```js
-var Participant = function (name) {
+const Participant = function (name) {
     this.name = name;
     this.chatroom = null;
 };
@@ -1100,8 +1167,8 @@ Participant.prototype = {
     }
 };
 
-var Chatroom = function () {
-    var participants = {};
+const Chatroom = function () {  // Mediator
+    const participants = {};
 
     return {
 
@@ -1126,23 +1193,23 @@ var Chatroom = function () {
 
 function run() {
 
-    var yoko = new Participant("Yoko");
-    var john = new Participant("John");
-    var paul = new Participant("Paul");
-    var ringo = new Participant("Ringo");
+    const yoko = new Participant("A");
+    const john = new Participant("B");
 
-    var chatroom = new Chatroom();
+    const chatroom = new Chatroom();
     chatroom.register(yoko);
     chatroom.register(john);
-    chatroom.register(paul);
-    chatroom.register(ringo);
 
-    yoko.send("All you need is love.");
-    yoko.send("I love you John.");
-    john.send("Hey, no need to broadcast", yoko);
-    paul.send("Ha, I heard that!");
-    ringo.send("Paul, what do you think?", paul);
+    yoko.send("I am A.");
+    yoko.send("I am 15.");
+    john.send("Hello", yoko);
 }
+run();
+/*
+A to B: I am A.
+A to B: I am 15.
+B to A: Hello
+*/
 ```
 
 
@@ -1156,66 +1223,72 @@ function run() {
 
 一个对象中那些私有信息存放在该对象之外，以及在什么时候进行存储（不破坏封装，捕获对象内部的状态）
 
+**● 使用场景 ●** 
+
+通过一个对象来存储原来的对象的属性，它并不改变原来的对象。这样可以方便在不同的状态时使用存储的数据。
+
 ```js
-var Person = function (name, street, city, state) {
+const Person = function (name, state) {
     this.name = name;
-    this.street = street;
-    this.city = city;
     this.state = state;
 }
 
 Person.prototype = {
 
     hydrate: function () {
-        var memento = JSON.stringify(this);
+        const memento = JSON.stringify(this);
         return memento;
     },
 
     dehydrate: function (memento) {
-        var m = JSON.parse(memento);
+        const m = JSON.parse(memento);
         this.name = m.name;
-        this.street = m.street;
-        this.city = m.city;
         this.state = m.state;
     }
 }
 
-var CareTaker = function () {
+const CareTaker = function () {
     this.mementos = {};
-
     this.add = function (key, memento) {
         this.mementos[key] = memento;
-    },
-
-        this.get = function (key) {
-            return this.mementos[key];
-        }
+    }
+    this.get = function (key) {
+        return this.mementos[key];
+    }
 }
 
 function run() {
 
-    var mike = new Person("Mike Foley", "1112 Main", "Dallas", "TX");
-    var john = new Person("John Wang", "48th Street", "San Jose", "CA");
-    var caretaker = new CareTaker();
+    const mike = new Person("AB", "TX");
+    const john = new Person("CD", "CA");
+    const caretaker = new CareTaker();
 
     // save state
-
     caretaker.add(1, mike.hydrate());
     caretaker.add(2, john.hydrate());
 
     // mess up their names
-
-    mike.name = "King Kong";
-    john.name = "Superman";
+    mike.name = "GGG";
+    john.name = "MMM";
 
     // restore original state
-
     mike.dehydrate(caretaker.get(1));
     john.dehydrate(caretaker.get(2));
 
     console.log(mike.name);
     console.log(john.name);
 }
+run();
+/*
+AB
+CD
+
+注释掉 dehydrate方法则输出：
+
+GGG
+MMM
+
+*/
 ```
 
 
@@ -1227,6 +1300,14 @@ function run() {
 **● 可变的方面 ●** 
 
 多个对象依赖于另外一个对象，而这些对象又如何保持一致（得到通知并自动刷新）
+
+**● 使用场景 ●** 
+
+这种模式实现了松耦合，任意数量的观察者对象都可以观察一个目标对象，实现一个让观察者对象订阅或取消订阅的接口。
+
+当它的状态改变时向它的观察者发送通知，然后可以调用观察者的绑定的函数来触发事件。
+
+它也可以说是发布订阅模式，他们都可以增加一个第三者(经纪人：Broker)，来通知发布者/订阅者，它们也可以完全解耦，实质上都是为了让对象之间互不相识却可以相互通信。
 
 ```js
 function Click() {
@@ -1250,7 +1331,7 @@ Click.prototype = {
     },
 
     fire: function (o, thisObj) {
-        var scope = thisObj || window;
+        const scope = thisObj || window;
         this.handlers.forEach(function (item) {
             item.call(scope, o);
         });
@@ -1259,11 +1340,11 @@ Click.prototype = {
 
 function run() {
 
-    var clickHandler = function (item) {
+    const clickHandler = function (item) {
         console.log("fired: " + item);
     };
 
-    var click = new Click();
+    const click = new Click();
 
     click.subscribe(clickHandler);
     click.fire('event #1');
@@ -1272,6 +1353,11 @@ function run() {
     click.subscribe(clickHandler);
     click.fire('event #3');
 }
+run();
+/*
+fired: event #1
+fired: event #3
+*/
 ```
 
 
@@ -1284,10 +1370,14 @@ function run() {
 
 对象的状态（状态改变时改变它的行为）
 
+**● 使用场景 ●** 
+
+创建一个函数 (上下文，即起到一个承上启下的作用，作为一个中间量，根据输入控制输出) 公开支持目标对象的接口，它用来维护这个引用的对象，并允许改变对象的状态属性。根据这些不同的状态，会有不同的事件触发。
+
 ```js
-var TrafficLight = function () {
-    var count = 0;
-    var currentState = new Red(this);
+const TrafficLight = function () {
+    let count = 0;
+    let currentState = new Red(this);
 
     this.change = function (state) {
         // limits number of changes
@@ -1301,7 +1391,7 @@ var TrafficLight = function () {
     };
 }
 
-var Red = function (light) {
+const Red = function (light) {
     this.light = light;
 
     this.go = function () {
@@ -1310,7 +1400,7 @@ var Red = function (light) {
     }
 };
 
-var Yellow = function (light) {
+const Yellow = function (light) {
     this.light = light;
 
     this.go = function () {
@@ -1319,7 +1409,7 @@ var Yellow = function (light) {
     }
 };
 
-var Green = function (light) {
+const Green = function (light) {
     this.light = light;
 
     this.go = function () {
@@ -1330,9 +1420,23 @@ var Green = function (light) {
 
 function run() {
 
-    var light = new TrafficLight();
+    const light = new TrafficLight();
     light.start();
 }
+run();
+/*
+Red --> for 1 minute
+Green --> for 1 minute
+Yellow --> for 10 seconds
+Red --> for 1 minute
+Green --> for 1 minute
+Yellow --> for 10 seconds
+Red --> for 1 minute
+Green --> for 1 minute
+Yellow --> for 10 seconds
+Red --> for 1 minute
+Green --> for 1 minute
+*/
 ```
 
 
@@ -1345,8 +1449,14 @@ function run() {
 
 算法（封装一系列算法，独立于使用它的客户）
 
+**● 使用场景 ●** 
+
+创建一个函数 (上下文，即起到一个承上启下的作用，作为一个中间量，根据输入控制输出) 公开支持目标对象的接口，针对当前引用的对象(这个对象可以是纯数据，也可以是其它)，接口允许客户端请求策略计算。
+
+即相同的数据，提供了不同的算法，来输出不同的结果。
+
 ```js
-var Shipping = function () {
+const Shipping = function () {
     this.company = "";
 };
 
@@ -1360,46 +1470,41 @@ Shipping.prototype = {
     }
 };
 
-var UPS = function () {
+const UPS = function () {
     this.calculate = function (package) {
         // calculations...
-        return "$45.95";
+        return "$15";
     }
 };
 
-var USPS = function () {
-    this.calculate = function (package) {
-        // calculations...
-        return "$39.40";
-    }
-};
 
-var Fedex = function () {
+const Fedex = function () {
     this.calculate = function (package) {
         // calculations...
-        return "$43.20";
+        return "$25";
     }
 };
 
 function run() {
 
-    var package = { from: "76712", to: "10012", weigth: "lkg" };
+    const package = { from: "76712", to: "10012", weigth: "lkg" };
 
     // the 3 strategies
+    const ups = new UPS();
+    const fedex = new Fedex();
 
-    var ups = new UPS();
-    var usps = new USPS();
-    var fedex = new Fedex();
-
-    var shipping = new Shipping();
+    const shipping = new Shipping();
 
     shipping.setStrategy(ups);
     console.log("UPS Strategy: " + shipping.calculate(package));
-    shipping.setStrategy(usps);
-    console.log("USPS Strategy: " + shipping.calculate(package));
     shipping.setStrategy(fedex);
     console.log("Fedex Strategy: " + shipping.calculate(package));
 }
+run();
+/*
+UPS Strategy: $15
+Fedex Strategy: $25
+*/
 ```
 
 
@@ -1412,8 +1517,12 @@ function run() {
 
 算法中的某些步骤（定义骨架）
 
+**● 使用场景 ●** 
+
+首先为一个函数提供一些接口，这些接口是实现定义算法基本步骤的钩子(也可以为空，也可以指定默认的代码)，开发人员可以轻松通过覆盖的方式定义自己的方法(也就是定义一个自定义的模版)
+
 ```js
-var datastore = {
+const datastore = {
     process: function () {
         this.connect();
         this.select();
@@ -1423,13 +1532,13 @@ var datastore = {
 };
 
 function inherit(proto) {
-    var F = function () { };
+    const F = function () { };
     F.prototype = proto;
     return new F();
 }
 
 function run() {
-    var mySql = inherit(datastore);
+    const mySql = inherit(datastore);
 
     // implement template steps
 
@@ -1447,6 +1556,12 @@ function run() {
 
     mySql.process();
 }
+run();
+/*
+MySQL: connect step
+MySQL: select step
+MySQL: disconnect step
+*/
 ```
 
 
@@ -1459,9 +1574,15 @@ function run() {
 
 某些可作用于一个(组)对象上的操作，但不修改这些对象的类（如回调函数，回调传参）
 
+**● 使用场景 ●** 
+
+让对象可以通过访问者查询，让对象也可以使用访问者的方法，从而可以改变对象的属性值。
+
+这样做的好处是无需重新创建一次相同的(不同属性值)对象来使用。
+
 ```js
-var Employee = function (name, salary, vacation) {
-    var self = this;
+const Employee = function (name, salary, vacation) {
+    const self = this;
 
     this.accept = function (visitor) {
         visitor.visit(self);
@@ -1478,47 +1599,40 @@ var Employee = function (name, salary, vacation) {
     this.setSalary = function (sal) {
         salary = sal;
     };
-
-    this.getVacation = function () {
-        return vacation;
-    };
-
-    this.setVacation = function (vac) {
-        vacation = vac;
-    };
 };
 
-var ExtraSalary = function () {
+const ExtraSalary = function () {
     this.visit = function (emp) {
         emp.setSalary(emp.getSalary() * 1.1);
     };
 };
 
-var ExtraVacation = function () {
-    this.visit = function (emp) {
-        emp.setVacation(emp.getVacation() + 2);
-    };
-};
 
 function run() {
 
-    var employees = [
-        new Employee("John", 10000, 10),
-        new Employee("Mary", 20000, 21),
-        new Employee("Boss", 250000, 51)
+    const employees = [
+        new Employee("A", 10000, 10),
+        new Employee("B", 20000, 21),
     ];
 
-    var visitorSalary = new ExtraSalary();
-    var visitorVacation = new ExtraVacation();
+    const visitorSalary = new ExtraSalary();
 
-    for (var i = 0, len = employees.length; i < len; i++) {
-        var emp = employees[i];
+    for (let i = 0, len = employees.length; i < len; i++) {
+        const emp = employees[i];
 
         emp.accept(visitorSalary);
-        emp.accept(visitorVacation);
-        console.log(emp.getName() + ": $" + emp.getSalary() +
-            " and " + emp.getVacation() + " vacation days");
+        console.log(`Employee Name: ${emp.getName()} - $${emp.getSalary()} `);
     }
 }
+run();
+/*
+Employee Name: A - $11000 
+Employee Name: B - $22000 
+
+注释  accept方法后，输出：
+
+Employee Name: A - $10000 
+Employee Name: B - $20000 
+*/
 ```
 
